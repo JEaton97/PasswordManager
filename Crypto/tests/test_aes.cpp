@@ -4,7 +4,7 @@
 
 int main()
 {
-	bool bSuccess = CryptoAES::SelfTest();
+	bool bSuccess = CryptoAES::SelfTest(true);
 	if (bSuccess)
 		std::cout << "*** CryptoAES self test: PASS" << std::endl;
 	else

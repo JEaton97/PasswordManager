@@ -31,7 +31,6 @@ CRYPTO_ERROR_CODES CryptoAES::EncryptData(std::vector<u8> vPlain, std::vector<u8
 	// Resize output vector. For AES, input size == output size
 	vCipher.resize(vPlain.size());
 
-	// TODO: Enable variable modes
 	return Encrypt(&vPlain[0], vPlain.size(), &vCipher[0], vCipher.size(), &vKey[0], vKey.size(), vIV.size() == 0 ? nullptr : &vIV[0], m_nMode);
 }
 
@@ -45,7 +44,6 @@ CRYPTO_ERROR_CODES CryptoAES::DecryptData(std::vector<u8> vCipher, std::vector<u
 	// Resize output vector. For AES, input size == output size
 	vPlain.resize(vCipher.size());
 
-	// TODO: Enable variable modes
 	return Decrypt(&vCipher[0], vCipher.size(), &vPlain[0], vPlain.size(), &vKey[0], vKey.size(), vIV.size() == 0 ? nullptr : &vIV[0], m_nMode);
 }
 
@@ -89,6 +87,7 @@ CRYPTO_ERROR_CODES CryptoAES::Encrypt(const u8* pIn, size_t nBytesIn, u8* pOut, 
 
 	// Initialize context and buffers
 	mbedtls_aes_context _ctx;
+	mbedtls_aes_init(&_ctx);
 	if (mbedtls_aes_setkey_enc(&_ctx, pKey, (uint)nKeyLength) != 0)
 		return CRYPTO_ERROR_CODES::CRYPT_ERROR_MBEDCRYPTO;
 
@@ -212,7 +211,7 @@ CRYPTO_ERROR_CODES CryptoAES::Decrypt(const u8* pIn, size_t nBytesIn, u8* pOut, 
 }
 
 // Helper function for self test to reduce code duplication
-bool RunTest(CryptoAES* aes, std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV, CRYPTO_MODES nMode, bool bPrintToConsole = false);
+bool RunTest(CryptoAES* pAES, std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV, CRYPTO_MODES nMode, bool bPrintToConsole = false);
 std::ostream& operator<<(std::ostream& oStream, CRYPTO_ERROR_CODES nErr) {
 	switch (nErr) {
 	case CRYPTO_ERROR_CODES::CRYPT_OK:						oStream << "CRYPT_OK";						break;
@@ -230,8 +229,6 @@ std::ostream& operator<<(std::ostream& oStream, CRYPTO_MODES nMode) {
 	case CRYPTO_MODES::AES_ECB:		oStream << "AES_ECB";				break;
 	case CRYPTO_MODES::AES_CBC:		oStream << "AES_CBC";				break;
 	case CRYPTO_MODES::AES_CTR:		oStream << "AES_CTR";				break;
-	case CRYPTO_MODES::DES_ECB:		oStream << "DES_ECB";				break;
-	case CRYPTO_MODES::DES_CBC:		oStream << "DES_CBC";				break;
 	case CRYPTO_MODES::TDES_ECB:	oStream << "TDES_ECB";				break;
 	case CRYPTO_MODES::TDES_CBC:	oStream << "TDES_CBC";				break;
 	default:						oStream << "UNKOWN_CRYPTO_MODE";	break;
@@ -242,8 +239,9 @@ std::ostream& operator<<(std::ostream& oStream, CRYPTO_MODES nMode) {
 bool CryptoAES::SelfTest(bool bPrintToConsole /* = false */)
 {
 	bool _bSuccess = true;
-
 	CryptoAES _aes;
+
+	// NOTE: Validation vectors pulled from https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/block-ciphers
 
 	// ECB, 128-bit key
 	{
@@ -349,18 +347,20 @@ bool CryptoAES::SelfTest(bool bPrintToConsole /* = false */)
 }
 
 // Helper function for self test to reduce code duplication
-bool RunTest(CryptoAES* aes, std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV, CRYPTO_MODES nMode, bool bPrintToConsole /* = false */)
+bool RunTest(CryptoAES* pAES, std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV, CRYPTO_MODES nMode, bool bPrintToConsole /* = false */)
 {
 	bool _bSuccess = true;
+	CRYPTO_ERROR_CODES _nRC;
 	std::vector<u8> _encrypted, _decrypted;
 
-	aes->Init(nMode);
+	pAES->Init(nMode);
 
 	// Encryption
-	if (CRYPTO_ERROR_CODES::CRYPT_OK != aes->EncryptData(vPlain, _encrypted, vKey, vIV))
+	_nRC = pAES->EncryptData(vPlain, _encrypted, vKey, vIV);
+	if (CRYPTO_ERROR_CODES::CRYPT_OK != _nRC)
 	{
 		if (bPrintToConsole)
-			std::cout << "CryptoAES SelfTest (" << nMode << " - " << vKey.size() * 8 << "-bit key) : FAIL - Encryption returned an error" << std::endl;
+			std::cout << "CryptoAES SelfTest (" << nMode << " - " << vKey.size() * 8 << "-bit key) : FAIL - Encryption returned " << _nRC << std::endl;
 		_bSuccess = false;
 	}
 	if (memcmp(&vCipher[0], &_encrypted[0], _encrypted.size()) != 0)
@@ -371,10 +371,11 @@ bool RunTest(CryptoAES* aes, std::vector<u8> vPlain, std::vector<u8>& vCipher, s
 	}
 
 	// Decryption
-	if (CRYPTO_ERROR_CODES::CRYPT_OK != aes->DecryptData(vCipher, _decrypted, vKey, vIV))
+	_nRC = pAES->DecryptData(vCipher, _decrypted, vKey, vIV);
+	if (CRYPTO_ERROR_CODES::CRYPT_OK != _nRC)
 	{
 		if (bPrintToConsole)
-			std::cout << "CryptoAES SelfTest (" << nMode << " - " << vKey.size() * 8 << "-bit key) : FAIL - Decryption returned an error" << std::endl;
+			std::cout << "CryptoAES SelfTest (" << nMode << " - " << vKey.size() * 8 << "-bit key) : FAIL - Decryption returned " << _nRC << std::endl;
 		_bSuccess = false;
 	}
 	if (memcmp(&vPlain[0], &_decrypted[0], _decrypted.size()) != 0)

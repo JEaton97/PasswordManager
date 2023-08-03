@@ -18,14 +18,12 @@ enum class CRYPTO_ERROR_CODES {
 enum class CRYPTO_MODES {
 	NONE,
 
-	// AES Block Mode Types
+	// AES Mode Types
 	AES_ECB,
 	AES_CBC,
 	AES_CTR,
 
-	// DES Block Mode Types
-	DES_ECB,
-	DES_CBC,
+	// TDES Mode Types
 	TDES_ECB,
 	TDES_CBC,
 };
@@ -50,7 +48,7 @@ private:
 class CryptoAES : ICrypto
 {
 public:
-	CryptoAES() : m_nMode(CRYPTO_MODES::AES_ECB) {};
+	CryptoAES() : m_nMode(CRYPTO_MODES::AES_ECB) {}
 
 	// Init with requested encryption mode
 	CRYPTO_ERROR_CODES Init(CRYPTO_MODES nMode = CRYPTO_MODES::AES_ECB);
@@ -71,25 +69,33 @@ private:
 	CRYPTO_MODES m_nMode;
 };
 
-/*
-// DES Block Cipher Schemes
-class CryptoDES : ICrypto
-{
 
+// TDES Block Cipher Schemes
+class CryptoTDES : ICrypto
+{
 public:
-	virtual bool Init() = 0;
+	CryptoTDES() : m_nMode(CRYPTO_MODES::TDES_ECB) {}
+
+	// Init with requested encryption mode
+	CRYPTO_ERROR_CODES Init(CRYPTO_MODES nMode = CRYPTO_MODES::TDES_ECB);
 	// Encrypt vPlain into vCipher
-	virtual CRYPTO_ERROR_CODES EncryptData(std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV) = 0;
+	CRYPTO_ERROR_CODES EncryptData(std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV);
 	// Decrypt vCipher into vPlain
-	virtual CRYPTO_ERROR_CODES DecryptData(std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV) = 0;
+	CRYPTO_ERROR_CODES DecryptData(std::vector<u8> vPlain, std::vector<u8>& vCipher, std::vector<u8> vKey, std::vector<u8> vIV);
 	// Retrieve block size for the cipher in bytes
-	virtual uint GetBlockSize() = 0;
+	uint GetBlockSize();
+
+	// Perform a basic test for each mode of DES encryption supported
+	static bool SelfTest(bool bPrintToConsole = false);
 
 private:
-	virtual CRYPTO_ERROR_CODES Encrypt(const u8* pIn, const uint nBytesIn, u8* pOut, uint nBytesOut, const u8* pKey, int nMode);
-	virtual CRYPTO_ERROR_CODES Decrypt(const u8* pIn, const uint nBytesIn, u8* pOut, uint nBytesOut, const u8* pKey, int nMode);
+	CRYPTO_ERROR_CODES Encrypt(const u8* pIn, size_t nBytesIn, u8* pOut, size_t nBytesOut, u8* pKey, size_t nKeyLength, u8* pIV, CRYPTO_MODES nMode);
+	CRYPTO_ERROR_CODES Decrypt(const u8* pIn, size_t nBytesIn, u8* pOut, size_t nBytesOut, u8* pKey, size_t nKeyLength, u8* pIV, CRYPTO_MODES nMode);
+
+	CRYPTO_MODES m_nMode;
 };
 
+/*
 // DUKPT Block Cipher Schemes
 class CryptoDUKPT : ICrypto
 {
