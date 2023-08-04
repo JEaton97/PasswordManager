@@ -8,12 +8,14 @@ endif()
 
 option(ENABLE_CRYPTO_TESTS "Build crypto test applications." ON)
 
-add_subdirectory(../_thirdParty/mbedtls-3.4.0 mbedtls)
+add_subdirectory(../_thirdParty/mbedtls-3.4.0 mbedtls EXCLUDE_FROM_ALL)
+add_subdirectory(../_thirdParty/argon2-20190702 argon2 EXCLUDE_FROM_ALL)
 
 include_directories(
 	${PROJECT_ROOT}/API
 	${PROJECT_ROOT}/include
 	${PROJECT_ROOT}/../_thirdParty/mbedtls-3.4.0/include
+	${PROJECT_ROOT}/../_thirdParty/argon2-20190702/include
 )
 
 set(SRC_FILES "")
@@ -24,9 +26,16 @@ add_library(
 	${SRC_FILES}
 )
 
+add_dependencies(
+	${PROJECT_NAME}
+	mbedcrypto
+	argon2
+)	
+
 target_link_libraries(
 	${PROJECT_NAME}
 	mbedcrypto
+	argon2
 )
 
 if (ENABLE_CRYPTO_TESTS)
