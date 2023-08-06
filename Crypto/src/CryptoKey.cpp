@@ -1,8 +1,8 @@
 #include "CryptoKey.h"
-#include "argon2.h"
+#include "ICrypto.h"
 #include <fstream>
 
-#define SALT_LENGTH 16
+#define MIN_KEY_LENGTH 16
 
 CryptoKey::~CryptoKey()
 {
@@ -15,64 +15,94 @@ CryptoKey::~CryptoKey()
 	}
 }
 
-bool CryptoKey::ReadKeyFromFile(std::string strFileName)
+CRYPTO_ERROR_CODES CryptoKey::ReadKeyFromFile(std::string strFileName)
 {
+	// Prepare SHA256 hash
+	HashSHA _sha;
+	u8Vec _vHash, _vCalcHash;
+	uint _nHashLength = _sha.GetHashLength();
+
 	// Open file requested
 	std::ifstream _fileIn(strFileName.c_str(), std::ios::in | std::ios::binary);
 	if (!_fileIn.is_open())
-		return false;
+		return CRYPTO_ERROR_CODES::CRYPT_ERROR_FILE_IO;
 
 	// Check file size
 	size_t _nFileSize;
 	_fileIn.seekg(0, _fileIn.end);
 	_nFileSize = _fileIn.tellg();
 	_fileIn.seekg(0, _fileIn.beg);
+	switch ((_nFileSize - _nHashLength) * 8)
+	{
+	case 128:
+	case 192:
+	case 256:
+		break;
+	default:
+		return CRYPTO_ERROR_CODES::CRYPT_ERROR_FILE_SIZE;
+	}
 
 	// Read data
-	m_vValue.resize(_nFileSize);
-	for (int i = 0; i < _nFileSize; i++)
-		_fileIn >> m_vValue[i];
+	_vHash.resize(_nHashLength);
+	_fileIn.read((char*)&_vHash[0], _nHashLength);
+	m_vValue.resize(_nFileSize - _nHashLength);
+	_fileIn.read((char*)&m_vValue[0], _nFileSize - _nHashLength);
+
+	// Calculate hash and compare
+	CRYPTO_ERROR_CODES _nRC = _sha.HashData(m_vValue, _vCalcHash);
+	if (_nRC != CRYPTO_ERROR_CODES::CRYPT_OK)
+		return _nRC;
+	if (memcmp(&_vHash[0], &_vCalcHash[0], _nHashLength) != 0)
+		return CRYPTO_ERROR_CODES::CRYPT_ERROR_FILE_CORRUPTED;
 
 	_fileIn.close();
 
-	return true;
+	return CRYPTO_ERROR_CODES::CRYPT_OK;
 }
 
-bool CryptoKey::WriteKeyToFile(std::string strFileName)
+CRYPTO_ERROR_CODES CryptoKey::WriteKeyToFile(std::string strFileName)
 {
+	// Calculate SHA256 hash
+	HashSHA _sha;
+	u8Vec _vHash;
+	uint _nHashLength = _sha.GetHashLength();
+	CRYPTO_ERROR_CODES _nRC = _sha.HashData(m_vValue, _vHash);
+	if (_nRC != CRYPTO_ERROR_CODES::CRYPT_OK)
+		return _nRC;
+
 	// Open file requested
-	std::ofstream _fileOut(strFileName.c_str(), std::ios::out | std::ios::binary);
+	std::ofstream _fileOut(strFileName.c_str(), std::ios::out | 
+		std::ios::binary);
 	if (!_fileOut.is_open())
-		return false;
+		return CRYPTO_ERROR_CODES::CRYPT_ERROR_FILE_IO;
 
 	// Write data
-	for (int i = 0; i < m_vValue.size(); i++)
-		_fileOut << m_vValue[i];
+	_fileOut.write((char*)&_vHash[0], _nHashLength);
+	_fileOut.write((char*)&m_vValue[0], m_vValue.size());
 
 	_fileOut.flush();
 	_fileOut.close();
 
-	return true;
+	return CRYPTO_ERROR_CODES::CRYPT_OK;
 }
 
-bool CryptoKey::DeriveNewKey(std::string strPassword, uint nTargetSize)
+CRYPTO_ERROR_CODES CryptoKey::DeriveNewKey(std::string strPassword, 
+	uint nTargetSize)
 {
-	int _nRC;
-	uint8_t _pSalt[SALT_LENGTH];
-	memset(_pSalt, 0x00, SALT_LENGTH);
+	// Check for valid key size
+	switch (nTargetSize * 8)
+	{
+	case 128:
+	case 192:
+	case 256:
+		break;
+	default:
+		return CRYPTO_ERROR_CODES::CRYPT_ERROR_BAD_INPUT;
+	}
 
-	u8* _pPass = (u8*)strPassword.c_str();
-	size_t _nPassLength = strPassword.size();
-
-	uint32_t _nTCost = 2;			// 2-pass computation
-	uint32_t _nMCost = (1 << 16);	// 64 MB memory usage
-	uint32_t _nParallelism = 1;		// number of threads and lanes
-
-	m_vValue.resize(nTargetSize);
-
-	_nRC = argon2id_hash_raw(_nTCost, _nMCost, _nParallelism, _pPass, 
-		_nPassLength, _pSalt, SALT_LENGTH, &m_vValue[0], nTargetSize);
-
-	return _nRC == ARGON2_OK;
+	// Use argon2id password hashing to derive new key
+	HashArgon2 _argon2;
+	_argon2.SetHashLength(nTargetSize);
+	return _argon2.HashData((u8*)strPassword.c_str(), strPassword.size(), 
+		m_vValue);
 }
-

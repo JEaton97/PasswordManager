@@ -5,6 +5,7 @@
 #include <iostream>
 #include "CryptoTypes.h"
 
+// TODO: Add retrieval of supported key size(s)
 
 // Common crypto interface for different cipher schemes
 class ICrypto {
@@ -105,5 +106,54 @@ private:
 	virtual CRYPTO_ERROR_CODES Decrypt(const u8* pIn, const uint nBytesIn, u8* pOut, uint nBytesOut, const u8* pKey1, const u8* pKey2, const u8* pKey3, int nMode = NULL);
 };
 */
+
+// Common crypto interface for different hash schemes
+class IHash {
+
+public:
+	// Hash data provided
+	virtual CRYPTO_ERROR_CODES HashData(u8Vec vData, u8Vec& vHash) = 0;
+	virtual CRYPTO_ERROR_CODES HashData(u8* pData, size_t nDataLength, 
+		u8Vec& vHash) = 0;
+
+	// Retrieve hash length for the algorithm in bytes
+	virtual uint GetHashLength() = 0;
+
+private:
+
+};
+
+class HashSHA : IHash {
+
+public:
+	HashSHA() : m_nMode(HASH_MODES::SHA256) {}
+
+	CRYPTO_ERROR_CODES Init(HASH_MODES nMode = HASH_MODES::SHA256);
+
+	CRYPTO_ERROR_CODES HashData(u8Vec vData, u8Vec& vHash);
+	CRYPTO_ERROR_CODES HashData(u8* pData, size_t nDataLength, u8Vec& vHash);
+
+	uint GetHashLength();
+private:
+	HASH_MODES m_nMode;
+};
+
+class HashArgon2 : IHash {
+
+public:
+	HashArgon2() : m_nMode(HASH_MODES::ARGON2ID), m_nHashLength(32) {}
+
+	CRYPTO_ERROR_CODES Init(HASH_MODES nMode = HASH_MODES::ARGON2ID);
+
+	CRYPTO_ERROR_CODES HashData(u8Vec vData, u8Vec& vHash);
+	CRYPTO_ERROR_CODES HashData(u8* pData, size_t nDataLength, u8Vec& vHash);
+
+	void SetHashLength(uint nLength) { m_nHashLength = nLength; }
+	uint GetHashLength() { return m_nHashLength; }
+
+private:
+	HASH_MODES m_nMode;
+	uint m_nHashLength;
+};
 
 #endif // _ICRYPTO

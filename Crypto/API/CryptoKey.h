@@ -12,11 +12,11 @@ public:
 	~CryptoKey();
 
 	// Read from file
-	bool ReadKeyFromFile(std::string strFileName);
+	CRYPTO_ERROR_CODES ReadKeyFromFile(std::string strFileName);
 	// Write to file
-	bool WriteKeyToFile(std::string strFileName);
+	CRYPTO_ERROR_CODES WriteKeyToFile(std::string strFileName);
 	// Derive new pseudorandom key
-	bool DeriveNewKey(std::string strPassword, uint nTargetSize);
+	CRYPTO_ERROR_CODES DeriveNewKey(std::string strPassword, uint nTargetSize);
 
 	// Get Key Value
 	std::vector<u8> GetKeyValue() { return m_vValue; }
