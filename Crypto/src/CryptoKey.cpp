@@ -9,10 +9,7 @@ CryptoKey::~CryptoKey()
 	if (m_vValue.size() == 0)
 		return;
 	// Zeroize memory
-	for (u8Vec::iterator it = m_vValue.begin(); it != m_vValue.end(); it++)
-	{
-		*it = 0;
-	}
+	memset(&m_vValue[0], 0, m_vValue.size());
 }
 
 CRYPTO_ERROR_CODES CryptoKey::ReadKeyFromFile(std::string strFileName)
@@ -20,7 +17,7 @@ CRYPTO_ERROR_CODES CryptoKey::ReadKeyFromFile(std::string strFileName)
 	// Prepare SHA256 hash
 	HashSHA _sha;
 	u8Vec _vHash, _vCalcHash;
-	uint _nHashLength = _sha.GetHashLength();
+	size_t _nHashLength = _sha.GetHashLength();
 
 	// Open file requested
 	std::ifstream _fileIn(strFileName.c_str(), std::ios::in | std::ios::binary);
@@ -65,7 +62,7 @@ CRYPTO_ERROR_CODES CryptoKey::WriteKeyToFile(std::string strFileName)
 	// Calculate SHA256 hash
 	HashSHA _sha;
 	u8Vec _vHash;
-	uint _nHashLength = _sha.GetHashLength();
+	size_t _nHashLength = _sha.GetHashLength();
 	CRYPTO_ERROR_CODES _nRC = _sha.HashData(m_vValue, _vHash);
 	if (_nRC != CRYPTO_ERROR_CODES::CRYPT_OK)
 		return _nRC;

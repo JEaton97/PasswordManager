@@ -25,7 +25,7 @@ enum class CRYPTO_ERROR_CODES {
 
 
 enum class CRYPTO_MODES {
-	NONE,
+	BEGIN,	// Dummy value for iteration
 
 	// AES Mode Types
 	AES_ECB,
@@ -35,11 +35,15 @@ enum class CRYPTO_MODES {
 	// TDES Mode Types
 	TDES_ECB,
 	TDES_CBC,
+
+	LAST	// Dummy value for iteration
 };
+
+const char* GetCryptoModeStr(CRYPTO_MODES nMode);
 
 
 enum class HASH_MODES {
-	NONE,
+	BEGIN,	// Dummy value for iteration
 
 	// SHA Modes
 	SHA224,
@@ -51,4 +55,8 @@ enum class HASH_MODES {
 	ARGON2I,
 	ARGON2D,
 	ARGON2ID,
+
+	LAST	// Dummy value for iteration
 };
+
+const char* GetHashModeStr(HASH_MODES nMode);

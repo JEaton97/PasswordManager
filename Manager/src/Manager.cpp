@@ -1,6 +1,12 @@
 #include <iostream>
+#include "IUserInterface.h"
 
 int main()
 {
-	std::cout << "Hello World" << std::endl;
+	ConsoleInterface _interface;
+
+	_interface.Init();
+	_interface.RunInterface();
+	
+	return 0;
 }

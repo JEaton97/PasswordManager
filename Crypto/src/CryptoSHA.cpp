@@ -36,7 +36,7 @@ CRYPTO_ERROR_CODES HashSHA::HashData(u8* pData, size_t nDataLength, u8Vec& vHash
 	return Hash(m_nMode, pData, nDataLength, vHash);
 }
 
-uint HashSHA::GetHashLength()
+size_t HashSHA::GetHashLength()
 {
 	switch (m_nMode)
 	{
