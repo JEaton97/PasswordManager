@@ -334,7 +334,27 @@ int GetInputSingle()
 std::string GetInputString()
 {
 	std::string _str;
-	std::cin >> _str;
+	int _ch = GetInputSingle();
+	while (_ch != '\n' && _ch != '\r')
+	{
+		if (_ch == 8 || _ch == 127)	// Backspace, delete
+		{
+			if (_str.size() > 0)
+			{
+				_str.pop_back();
+				std::cout << '\b' << ' ' << '\b';
+				std::cout.flush();
+			}
+		}
+		else
+		{
+			_str.append(1, (char)_ch);
+			std::cout << (char)_ch;
+			std::cout.flush();
+		}
+		_ch = GetInputSingle();
+	}
+	std::cout << '\n';
 	return _str;
 }
 
@@ -344,9 +364,18 @@ std::string GetInputStringHidden()
 	int _ch = GetInputSingle();
 	while (_ch != '\n' && _ch != '\r')
 	{
-		_str.append(1, (char)_ch);
+		if (_ch == 8 || _ch == 127)	// Backspace, delete
+		{
+			if (_str.size() > 0)
+				_str.pop_back();
+		}
+		else
+		{
+			_str.append(1, (char)_ch);
+		}
 		_ch = GetInputSingle();
 	}
+	std::cout << '\n';
 	return _str;
 }
 

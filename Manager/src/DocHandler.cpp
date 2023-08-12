@@ -1,6 +1,10 @@
 #include "DocHandler.h"
+
 #include <fstream>
 #include <sstream>
+#ifdef __GNUC__
+#include <cstring>
+#endif
 
 /*
 

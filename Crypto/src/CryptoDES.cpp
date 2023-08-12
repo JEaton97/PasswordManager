@@ -1,6 +1,11 @@
-#include <iostream>
 #include "ICrypto.h"
 #include "mbedtls/des.h"
+
+#include <iostream>
+#ifdef __GNUC__
+#include <cstring>
+#endif
+
 
 #define N_BLOCK 8
 

@@ -1,6 +1,11 @@
 #include "CryptoKey.h"
 #include "ICrypto.h"
+
 #include <fstream>
+#ifdef __GNUC__
+#include <cstring>
+#endif
+
 
 #define MIN_KEY_LENGTH 16
 

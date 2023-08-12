@@ -1,6 +1,11 @@
-#include <iostream>
 #include "ICrypto.h"
 #include "mbedtls/aes.h"
+
+#include <iostream>
+#ifdef __GNUC__
+#include <cstring>
+#endif
+
 
 #define N_ROW 4
 #define N_COL 4

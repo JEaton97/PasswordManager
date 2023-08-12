@@ -1,5 +1,10 @@
 #include "CryptoKey.h"
+
 #include <iostream>
+#ifdef __GNUC__
+#include <cstring>
+#endif
+
 
 int main()
 {

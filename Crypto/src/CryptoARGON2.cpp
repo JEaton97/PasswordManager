@@ -1,6 +1,11 @@
 #include "ICrypto.h"
 #include "argon2.h"
 
+#ifdef __GNUC__
+#include <cstring>
+#endif
+
+
 #define SALT_LENGTH 16
 
 bool Hash(HASH_MODES nMode, u8* pData, size_t nDataLength, u8* pHash,
